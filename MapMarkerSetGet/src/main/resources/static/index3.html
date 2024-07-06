@@ -60,10 +60,17 @@
     var marker, infowindow;
     var watchId;
 
-    // 약속 시간 설정 (임시 설정)
+    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    //플러터 설정 1. 데이터 전송부
+    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    // 약속 시간 설정 (임시 설정) - 추가 설정 필요
     var appointmentTime = new Date('2024-07-03T17:55:00'); // +9:00 = KST
 
-    // 약속 장소 설정 (임시 설정)
+
+    
+    // 약속 장소 설정 (임시 설정) - index4 설정 방식과 동일
+    // appointmentPosition에 좌표 데이터 전송 필요
     var appointmentLat = 37.549280;
     var appointmentLon = 127.019067;
     var appointmentPosition = new kakao.maps.LatLng(appointmentLat, appointmentLon);
@@ -73,6 +80,11 @@
         position: appointmentPosition
     });
 
+    /////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+    
     var appointmentCircle = new kakao.maps.Circle({
         center: appointmentPosition,
         radius: 100,
@@ -186,7 +198,11 @@
         }
     }
 
+    /////////////////////////////////////////////////////////////////////////////////////////////////
     // 약속 시간과 장소 조건 확인 함수
+    ///////////////////////////////////////////////////////////////////////
+    //작동부 내 조건문만 확인 필요
+    
     function checkAppointmentConditions(position) {
         var lat = position.coords.latitude;
         var lon = position.coords.longitude;
@@ -198,6 +214,14 @@
         var isOnTime = now >= oneHourBeforeAppointment && now <= appointmentEndTime;
         var isAtLocation = isWithinDistance(lat, lon, appointmentLat, appointmentLon, 100);
 
+        ////////////////////////////////////////////////////////////////////////////////
+        //플러터 수정시
+        // 1. (isOnTime && isAtLocation) 시간,장소 조건성립 - 'data1' 송신
+        // 2. (!isOnTime && !isAtLocation) 시간,장소 조건 모두 미성립 - 'data2' 송신
+        // 3. (!isOnTime) 시간 조건 미성립 - 'data2' 송신
+        // 4. 장소 조건의 경우 미처리 상태로 두고, 계속 위치 추적하도록 함
+
+        
         if (isOnTime && isAtLocation) {
             alert("약속 장소에 시간 내에 도착했습니다");
             window.parent.postMessage('data1', '*');
