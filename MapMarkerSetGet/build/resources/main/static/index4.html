@@ -30,7 +30,7 @@
             list-style: none;
             padding: 0;
             margin: 0;
-            display: block; /* Initially hidden */
+            display: block;
         }
         #placesList li {
             padding: 10px;
@@ -60,13 +60,45 @@
             text-align: center;
             box-shadow: 0 -2px 5px rgba(0,0,0,0.1);
         }
-
         #recommendation {
             font-size: 16px;
             font-weight: bold;
             color: #333;
         }
-        
+        #categoryButton {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background-color: #fff;
+            border: 1px solid #ddd;
+            cursor: pointer;
+            padding: 5px 10px;
+            border-radius: 5px;
+            z-index: 2;
+        }
+        #categoryList {
+            position: absolute;
+            top: 50px;
+            right: 10px;
+            width: 250px;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 10px;
+            padding: 10px;
+            display: none;
+            z-index: 2;
+        }
+        #categoryList ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        #categoryList li {
+            padding: 5px;
+            cursor: pointer;
+        }
+        #categoryList li:hover {
+            background-color: #f0f0f0;
+        }
     </style>
 </head>
 <body>
@@ -80,6 +112,11 @@
     <div id="recommendation"></div>
 </div>
 
+<button id="categoryButton" onclick="toggleCategoryList()">카테고리</button>
+<div id="categoryList">
+    <ul id="categoryListUl"></ul>
+</div>
+
 <script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey=2593cd0ae97765ce1a715a68329db9ee&libraries=services"></script>
 <script>
     var mapContainer = document.getElementById('map'),
@@ -91,30 +128,71 @@
     var map = new kakao.maps.Map(mapContainer, mapOptions);
 
     var categoryGroups = [
-        { code: 'MT1', text: "만난김에 쇼핑! 주변 '대형마트'어떠세요?" },
-        { code: 'CS2', text: "시원한 음료수 잠깐! 주변 '편의점' 위치에요." },
-        { code: 'PK6', text: "주차할 공간이... 여기 '주차장'이에요!" },
-        { code: 'OL7', text: "주유/충전은 여기로! 주변 '주유소, 충전소'에요." },
-        { code: 'CT1', text: "문화를 같이 즐겨볼까요? 주변 '문화시설'입니다." },
-        { code: 'AT4', text: "이 주변 '관광명소'는? 숨겨진 명소가 있을까요?" },
-        { code: 'AD5', text: "늦은 시간까지 즐기실 거라면... '숙박'시설은 여기랍니다." },
-        { code: 'FD6', text: "금강산도 식후경! 주위 '음식점'은 어디가 있을까요?" },
-        { code: 'CE7', text: "커피 한 잔과 대화부터 할까요? 주변 '카페'에서요." },
-        { code: 'PM9', text: "갑자기 비상약이 필요하시다면 주변 '약국'은 여기에요." }
+        { code: 'MT1', text: "대형마트" },
+        { code: 'CS2', text: "편의점" },
+        { code: 'PK6', text: "주차장" },
+        { code: 'OL7', text: "주유소, 충전소" },
+        { code: 'CT1', text: "문화시설" },
+        { code: 'AT4', text: "관광명소" },
+        { code: 'AD5', text: "숙박" },
+        { code: 'FD6', text: "음식점" },
+        { code: 'CE7', text: "카페" },
+        { code: 'PM9', text: "약국" },
+        { code: 'BK9', text: "은행" }
     ];
 
     var randomCategory = categoryGroups[Math.floor(Math.random() * categoryGroups.length)];
-    document.getElementById('recommendation').innerText = randomCategory.text;
+    document.getElementById('recommendation').innerText = "주변의 " + randomCategory.text + "을(를) 추천해 드렸습니다.";
 
-    //////////////////////////////////////////////////////////////////////////
-    // 원을 표시할 중심점
-    /*중요 - circleCenter 값은 추후 index2의 저장된 위치 값 불러오기랑 동일하게 설정*/
+    window.addEventListener('message', function(event) {
+        console.log('Received message: ', event.data);
+        var data;
+        try {
+            data = JSON.parse(event.data);
+        } catch (e) {
+            console.log('Error parsing message data:', e);
+        }
+        var mapCenter;
+        if (data && data.latitude && data.longitude) {
+            var latitude = parseFloat(data.latitude);
+            var longitude = parseFloat(data.longitude);
+            console.log('Parsed coordinates: ', latitude, longitude);
+            mapCenter = new kakao.maps.LatLng(latitude, longitude);
+            // 전달된 데이터를 화면에 표시
+            document.getElementById('latitude').textContent = latitude;
+            document.getElementById('longitude').textContent = longitude;
+        } else {
+            console.log('Invalid message format or data type');
+        }
+    });
+    /*
 
-    var mapCenter = new kakao.maps.LatLng(37.56823879655781, 126.97882164417362);
+     window.addEventListener('message', function(event) {
+        console.log('Received message: ', event.data);
+        var data;
+        try {
+            data = JSON.parse(event.data);
+        } catch (e) {
+            console.log('Error parsing message data:', e);
+        }
+        if (data && data.latitude && data.longitude) {
+            latitude = parseFloat(data.latitude);
+            longitude = parseFloat(data.longitude);
+            console.log('Parsed coordinates: ', latitude, longitude);
+            setMarker(latitude, longitude);
+        } else {
+            console.log('Invalid message format or data type');
+        }
+    });
 
-    //////////////////////////////////////////////////////////////////////////
+    */
 
+    // 초기 데이터를 부모 창으로부터 요청합니다.
+    window.parent.postMessage({ type: 'requestCoordinates' }, '*');
 
+    var mapCenter = new kakao.maps.LatLng(37.54282, 127.065063);//단순좌표테스트용
+
+    map.setCenter(mapCenter);
 
     var circleCenter = mapCenter;
 
@@ -145,6 +223,23 @@
 
     var placeMarkers = [];
 
+    // 카테고리 목록 생성
+    var categoryListUl = document.getElementById('categoryListUl');
+    categoryGroups.forEach(function(category) {
+        var li = document.createElement('li');
+        li.textContent = category.text;
+        li.onclick = function() {
+            searchNearby(category.code);
+            toggleCategoryList();
+        };
+        categoryListUl.appendChild(li);
+    });
+
+    function toggleCategoryList() {
+        var categoryList = document.getElementById('categoryList');
+        categoryList.style.display = categoryList.style.display === 'none' ? 'block' : 'none';
+    }
+
     searchNearby(randomCategory.code);
 
     function searchNearby(categoryCode) {
@@ -162,7 +257,7 @@
             if (status === kakao.maps.services.Status.OK) {
                 if (data.length === 0) {
                     var noResultEl = document.createElement('li');
-                    noResultEl.textContent = "이 주변에는 '" + randomCategory.text.split("'")[1] + "'가 없는 것 같네요.";
+                    noResultEl.textContent = "이 주변에는 선택한 카테고리의 장소가 없는 것 같네요.";
                     placesList.appendChild(noResultEl);
                 } else {
                     for (var i = 0; i < data.length; i++) {
@@ -171,14 +266,14 @@
                 }
             } else {
                 var errorEl = document.createElement('li');
-                errorEl.textContent = "이 주변에는 없는 것 같아요...";
+                errorEl.textContent = "검색 중 오류가 발생했습니다.";
                 placesList.appendChild(errorEl);
             }
         }
 
         function displayPlace(place, index) {
             var el = document.createElement('li');
-            el.innerHTML = place.place_name;
+            el.innerHTML = index +'. ' + place.place_name;
             el.onclick = function () {
                 var latLng = new kakao.maps.LatLng(place.y, place.x);
                 map.setCenter(latLng);
@@ -295,7 +390,6 @@
     kakao.maps.event.addListener(map, 'click', closeInfoWindow);
 
     initListClickEvent();
-
 </script>
 </body>
 </html>
